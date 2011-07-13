@@ -103,6 +103,9 @@ $myBoleto = new Boleto($myArguments);
 //if you wanna print out the html then call
 $myBoleto->output();
 
+echo '<pre>';
+print_r($myBoleto);
+
 //Use $myBoleto->output(FALSE); to only populate the output property without rendering the html
 
 ?>

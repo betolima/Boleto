@@ -35,15 +35,14 @@
  *   Junho / 2011
  */
 
-class Boleto {
+include_once('../Drupalista_BPM/Drupalista_BPM.class.php');
+
+class Boleto extends Drupalista_BPM {
     //issuer bank info
     public $bank_code;
     public $bank_name;
     private $is_implemented = TRUE;
-    
-    //warnings
-    public $warnings = array();
-    
+   
     //Method registration
     private $methods = array('child'  => '',
                              'parent' => '',); 
@@ -252,13 +251,13 @@ class Boleto {
      * Calculation of "Due Date" field
      * Argument values expected: -1             == Cash against document
      *                           Integer Number == Number of days added on top of issuing date
-     *                           dd-mm-yyy      == Set date
+     *                           dd-mm-yyy      == Set a given date
      *                           
-     * If argument is not present then it adds 5 days on top of issuing date.
+     * If argument is not present then it defaults 5 days on top of issuing date.
      */
     public function data_vencimento(){
         /** set defaults**/
-        //making sure we got a dash "-" instead of forward slah "/" for vencimento
+        //making sure we got a dash "-" instead of a forward slash "/" for vencimento
         $this->computed['data_vencimento'] = str_replace('/','-', $this->arguments['data_vencimento']);
         //adds 5 days on top of issuing date
         $vencimento            = '+5';
@@ -281,7 +280,7 @@ class Boleto {
                 //check if date is in a valide format
                 $date_check = explode('-', $vencimento_value);
                 if(!checkdate($date_check[1], $date_check[0], $date_check[2])){
-                    $this->setWarning(array('data_vencimento', 'Invalido. Certifique-se que tenha informado ou -1 ou um numero inteiro ou uma data no formato dd-mm-yyyy.<br>'));
+                    Drupalista_BPM::setWarning(array('data_vencimento', 'Invalido. Certifique-se que tenha informado ou -1 ou um numero inteiro ou uma data no formato dd-mm-yyyy.<br>'));
                 }                
             }
         }
@@ -321,7 +320,7 @@ class Boleto {
         $this->computed['codigo_banco_com_dv']   = $this->bank_code.'-'.$bank_code_checkDigit['digito'];
     }
 
-    // Documentation at http://www.febraban.org.br/Acervo1.asp?id_texto=195&id_pagina=173&palavra=    
+    //Documentation at http://www.febraban.org.br/Acervo1.asp?id_texto=195&id_pagina=173&palavra=    
     public function febraban(){
         /** calculates FEBRABAN specifications **/
 	// 01-03 (3)  -> Código do banco sem o digito
@@ -331,7 +330,7 @@ class Boleto {
 	// 10-19 (10) -> Valor Nominal do Título
 	// 20-44 (25) -> Campo Livre. This is calculated at child's class implementation by febraban20to44().
 
-        //postions 1 to 3
+        //positions 1 to 3
         $this->febraban['1-3'] = $this->bank_code;
         //position 4 has a pre set value of 9
         //positions 6-9 is done at fator_vencimento()
@@ -365,17 +364,17 @@ class Boleto {
         $this->febraban['5-5'] = $checkDigit['digito'];
         
         /** check if febraban property is complying with the rules **/
-        //create an array of allowed lenghs for each febraban block
+        //create an array of required lenghs for each febraban block
         $rules = array('1-3' => 3, '4-4' => 1, '5-5' => 1, '6-9' => 4, '10-19' => 10, '20-44' => 25);
         
         foreach($this->febraban as $key => $value){
             $lengh = strlen($value);
             if($lengh != $rules[$key]){
-                $this->setWarning(array("febraban[$key]", "possui $lengh digitos enquanto deveria ter $rules[$key]."));
+                Drupalista_BPM::setWarning(array("febraban[$key]", "possui $lengh digitos enquanto deveria ter $rules[$key]."));
             }
         }
         
-        //check if child class wants to do any custom stuff before object delivering
+        //check if child class wants to do any custom stuff before delivering the object
         if($this->is_implemented) {        
             if(in_array('custom', $this->methods['child'])){
                 //when present, this is the last method to be called in the construction chain
@@ -467,7 +466,7 @@ class Boleto {
                     $this->settings[$key] = $location.'/'.$filename;
                 }elseif($required){
                     //set warning
-                    $this->setWarning(array($key, "O arquivo $location/$filename nao pode ser encontrado."));
+                    Drupalista_BPM::setWarning(array($key, "O arquivo $location/$filename nao pode ser encontrado."));
                 }
             }
 
@@ -477,7 +476,7 @@ class Boleto {
                 $childClass::setUp();
             }else{
                 //set warning
-                $this->setWarning(array('settings', 'Os metodos setUp e febraban_20to44 nao foram encontradas na implementacao do banco. Leia o arquivo readme.txt para mais informacoes.'));
+                Drupalista_BPM::setWarning(array('settings', 'Os metodos setUp e febraban_20to44 nao foram encontradas na implementacao do banco. Leia o arquivo readme.txt para mais informacoes.'));
             }
         }
     }
@@ -564,7 +563,7 @@ class Boleto {
         foreach($img_widths as $key => $width){
             //rendering
             $img = $img_strips[$key];
-            $this->computed['bar_code']['strips'] .= "<img src=$img width=$width height=$height border=0>";
+            $this->computed['bar_code']['strips'] .= "<img src='$img' width='$width' height='$height' border='0'>";
             
             //strip widths for debug checking
             $this->computed['bar_code']['widths'] .=  $width;
@@ -627,7 +626,7 @@ class Boleto {
             //set default
             $this->output['merchant_logo'] = $this->settings['images'].'/merchant_logo.png';
             //set warning
-            $this->setWarning(array('merchant_logo', 'Logomarca do sacado nao foi informada ou o caminho informado esta errado.'));
+            Drupalista_BPM::setWarning(array('merchant_logo', 'Logomarca do sacado nao foi informada ou o caminho informado esta errado.'));
         }
         //check if child class wants to change anything before rendering it out
         if($this->is_implemented) {
@@ -642,19 +641,5 @@ class Boleto {
             include_once(getcwd().'/'.$this->settings['template']);    
         }
     }
-    /**
-     * Set Warnings
-     * 
-     * @param $message == (array) Key holds the field name and Value holds the Message to be set or unset
-     * @param $action  == 1 sets, 0 unsets
-     * 
-     */    
-    public function setWarning($message, $action = 1){
-        if($action){
-            $this->warnings[$message[0]] = $message[1];
-        }else{
-            unset($this->warnings[$message[0]]);
-        }
-    }    
 }
 ?>
