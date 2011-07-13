@@ -149,11 +149,11 @@ class Boleto extends Drupalista_BPM {
         $this->bank_code = trim($arguments['bank_code']);
 
         //check if the issuer bank is implemented by a child class   
-        if(!@file_exists(getcwd().'/boleto-lib/bancos/'.$this->bank_code.'/Banco_'.$this->bank_code.'.php') ) {
+        if(!@file_exists(dirname(__FILE__).'/boleto-lib/bancos/'.$this->bank_code.'/Banco_'.$this->bank_code.'.php') ) {
             $this->is_implemented = 0;
         }else{
             //include class implementation file
-            include_once(getcwd().'/boleto-lib/bancos/'.$this->bank_code.'/Banco_'.$this->bank_code.'.php');
+            include_once(dirname(__FILE__).'/boleto-lib/bancos/'.$this->bank_code.'/Banco_'.$this->bank_code.'.php');
             //get methods declared at child class
             $methods = get_class_methods('Banco_'.$this->bank_code);
             $child = TRUE;
@@ -638,7 +638,7 @@ class Boleto extends Drupalista_BPM {
         }
         //it's time for rendering it. Yaaay!!!
         if($render){
-            include_once(getcwd().'/'.$this->settings['template']);    
+            include_once(dirname(__FILE__).'/'.$this->settings['template']);    
         }
     }
 }
